@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Office Grocery Tracker</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f4f6f9;color:#1a1a1a;min-height:100vh}
+.app{max-width:1100px;margin:0 auto;padding:1.5rem}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px;background:#fff;padding:1rem 1.25rem;border-radius:12px;border:0.5px solid #e0e0e0}
+.topbar h1{font-size:20px;font-weight:600;color:#1a1a1a}
+.topbar .sub{font-size:13px;color:#666;margin-top:2px}
+.month-sel{padding:6px 10px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#1a1a1a;font-size:13px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem}
+.kpi{background:#fff;border-radius:8px;padding:14px 16px;border:0.5px solid #e0e0e0}
+.kpi .lbl{font-size:12px;color:#666;margin-bottom:4px}
+.kpi .val{font-size:24px;font-weight:600;color:#1a1a1a}
+.kpi .val.warn{color:#b85c00}
+.sync-bar{display:flex;align-items:center;gap:8px;background:#eef4fb;border:0.5px solid #b5d4f4;border-radius:8px;padding:8px 14px;margin-bottom:1.25rem;font-size:13px;color:#0c447c;flex-wrap:wrap}
+.sync-bar.err{background:#fcebeb;border-color:#f0aaaa;color:#791f1f}
+.sync-bar.ok{background:#eaf3de;border-color:#c0dd97;color:#27500a}
+.tabs{display:flex;gap:4px;background:#f0f2f5;border-radius:8px;padding:4px;margin-bottom:1.25rem;flex-wrap:wrap}
+.tab{padding:7px 14px;border-radius:6px;border:none;background:none;font-size:13px;cursor:pointer;color:#555;font-family:Arial,sans-serif;display:flex;align-items:center;gap:5px}
+.tab.active{background:#fff;color:#1a1a1a;font-weight:600;border:0.5px solid #ddd;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.card{background:#fff;border:0.5px solid #e0e0e0;border-radius:12px;overflow:hidden;margin-bottom:1.25rem}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:#f4f6f9;padding:9px 11px;text-align:left;font-weight:600;color:#555;border-bottom:1px solid #e0e0e0;white-space:nowrap}
+tbody td{padding:9px 11px;border-bottom:0.5px solid #ececec;color:#1a1a1a;vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#f9fafc}
+input[type=number]{width:68px;padding:5px 6px;border-radius:6px;border:1px solid #ccc;background:#fff;color:#1a1a1a;font-size:13px;text-align:center;font-family:Arial,sans-serif}
+input[type=number]:focus{outline:none;border-color:#185fa5}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.badge.ok{background:#eaf3de;color:#27500a}
+.badge.low{background:#faeeda;color:#633806}
+.badge.reorder{background:#fcebeb;color:#791f1f}
+.toolbar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.btn{padding:7px 15px;border-radius:8px;border:1px solid #ccc;background:#f4f6f9;color:#1a1a1a;font-size:13px;cursor:pointer;font-family:Arial,sans-serif;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:#e8eaf0}
+.btn.primary{background:#185fa5;color:#fff;border-color:#185fa5}
+.btn.primary:hover{background:#0c447c}
+.btn.success{background:#1d9e75;color:#fff;border-color:#1d9e75}
+.btn.success:hover{background:#0f6e56}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.log-form{padding:1rem 1.25rem;border-bottom:1px solid #ececec;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;background:#f9fafc}
+.log-form label{font-size:12px;color:#555;display:block;margin-bottom:3px;font-weight:600}
+.log-form select,.log-form input[type=text],.log-form input[type=number]{padding:6px 9px;border-radius:7px;border:1px solid #ccc;background:#fff;color:#1a1a1a;font-size:13px;font-family:Arial,sans-serif}
+.log-form select{min-width:130px}
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.25rem}
+@media(max-width:600px){.chart-row{grid-template-columns:1fr}}
+.chart-wrap{padding:1rem 1.25rem}
+.chart-title{font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:12px}
+.export-panel{background:#fff;border:0.5px solid #e0e0e0;border-radius:12px;padding:1.25rem;margin-bottom:1.25rem}
+.ep-title{font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.export-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.export-card{background:#f9fafc;border:1px solid #e0e0e0;border-radius:10px;padding:16px;cursor:pointer;transition:border-color .15s,background .15s}
+.export-card:hover{border-color:#185fa5;background:#eef4fb}
+.export-card .ec-icon{font-size:24px;color:#185fa5;margin-bottom:8px}
+.export-card .ec-title{font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px}
+.export-card .ec-desc{font-size:12px;color:#666;line-height:1.5}
+.pane{display:none}.pane.active{display:block}
+.toast{position:fixed;bottom:24px;right:24px;background:#1d9e75;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;font-weight:600}
+.toast.show{opacity:1}
+.hint{font-size:12px;color:#888;margin-top:6px;padding:0 2px}
+.item-form{padding:1.25rem;border-bottom:1px solid #ececec;background:#f9fafc}
+.item-form .form-row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.item-form label{font-size:12px;color:#555;display:block;margin-bottom:3px;font-weight:600}
+.item-form input[type=text],.item-form select{padding:7px 9px;border-radius:7px;border:1px solid #ccc;background:#fff;color:#1a1a1a;font-size:13px;font-family:Arial,sans-serif}
+.item-form input[type=text]{min-width:160px}
+.item-form select{min-width:130px}
+.edit-input{padding:4px 7px;border-radius:6px;border:1px solid #185fa5;background:#fff;color:#1a1a1a;font-size:13px;font-family:Arial,sans-serif;width:100%}
+.icon-btn{background:none;border:none;cursor:pointer;font-size:16px;padding:3px 5px;border-radius:5px;line-height:1}
+.icon-btn:hover{background:#f0f0f0}
+.icon-btn.del:hover{background:#fcebeb;color:#791f1f}
+.cat-badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;background:#e6f1fb;color:#0c447c}
+.items-count{font-size:13px;color:#666;margin-left:auto}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #b5d4f4;border-top-color:#185fa5;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.last-sync{font-size:12px;color:#888;margin-left:auto}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="toast" class="toast"></div>
+  <div class="topbar">
+    <div>
+      <h1><i class="ti ti-packages" style="font-size:20px;vertical-align:-3px;margin-right:6px;color:#185fa5"></i>Office Grocery Tracker</h1>
+      <div class="sub">Live team data &middot; stock &middot; distribution &middot; charts &middot; export</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select class="month-sel" id="monthSel"></select>
+      <button class="btn" onclick="loadFromSheet(true)" id="refreshBtn"><i class="ti ti-refresh"></i> Refresh</button>
+    </div>
+  </div>
+
+  <div class="sync-bar" id="syncBar">
+    <span class="spinner" id="syncSpinner"></span>
+    <span id="syncMsg">Connecting to Google Sheet...</span>
+    <span class="last-sync" id="lastSync"></span>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('stock',this)"><i class="ti ti-packages"></i> Stock</button>
+    <button class="tab" onclick="switchTab('log',this)"><i class="ti ti-list"></i> Distribution log</button>
+    <button class="tab" onclick="switchTab('charts',this)"><i class="ti ti-chart-bar"></i> Charts</button>
+    <button class="tab" onclick="switchTab('export',this)"><i class="ti ti-download"></i> Export</button>
+    <button class="tab" onclick="switchTab('items',this)"><i class="ti ti-edit"></i> Manage items</button>
+  </div>
+
+  <div id="pane-stock" class="pane active">
+    <div class="toolbar">
+      <button class="btn primary" onclick="saveStock()" id="saveStockBtn"><i class="ti ti-device-floppy"></i> Save &amp; sync</button>
+      <span style="font-size:12px;color:#888">Saves to Google Sheet — visible to whole team</span>
+    </div>
+    <div class="card"><div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>#</th><th>Item</th><th>Category</th><th>Unit</th><th>Opening stock</th><th>Received</th><th>Total available</th><th>Given out</th><th>Closing stock</th><th>Status</th></tr></thead>
+        <tbody id="stockBody"></tbody>
+      </table>
+    </div></div>
+  </div>
+
+  <div id="pane-log" class="pane">
+    <div class="card">
+      <div class="log-form">
+        <div><label>Item</label><select id="logItem" style="min-width:180px"></select></div>
+        <div><label>Qty given out</label><input type="number" id="logQty" min="1" value="1" style="width:74px"></div>
+        <div><label>Given to</label><input type="text" id="logTo" placeholder="Name / department" style="min-width:160px"></div>
+        <div style="align-self:flex-end"><button class="btn primary" onclick="addLog()"><i class="ti ti-plus"></i> Add &amp; sync</button></div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Date</th><th>Item</th><th>Qty</th><th>Given to</th><th>Month</th><th></th></tr></thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="pane-charts" class="pane">
+    <div class="chart-row">
+      <div class="card chart-wrap"><div class="chart-title">Closing stock by item</div><div style="position:relative;width:100%;height:270px"><canvas id="barChart"></canvas></div></div>
+      <div class="card chart-wrap"><div class="chart-title">Given out vs received</div><div style="position:relative;width:100%;height:270px"><canvas id="doughnutChart"></canvas></div></div>
+    </div>
+    <div class="card chart-wrap"><div class="chart-title">Monthly usage trend — top 6 items</div><div style="position:relative;width:100%;height:270px"><canvas id="lineChart"></canvas></div></div>
+  </div>
+
+  <div id="pane-export" class="pane">
+    <div class="export-panel">
+      <div class="ep-title"><i class="ti ti-file-spreadsheet" style="color:#185fa5"></i> Choose export</div>
+      <div class="export-grid">
+        <div class="export-card" onclick="exportCurrentMonth()"><div class="ec-icon"><i class="ti ti-calendar-month"></i></div><div class="ec-title">Current month</div><div class="ec-desc">Stock + log for <span id="exportMonthLabel"></span></div></div>
+        <div class="export-card" onclick="exportAllMonths()"><div class="ec-icon"><i class="ti ti-calendar-stats"></i></div><div class="ec-title">All months</div><div class="ec-desc">Full history across every recorded month</div></div>
+        <div class="export-card" onclick="exportReorderList()"><div class="ec-icon"><i class="ti ti-alert-triangle"></i></div><div class="ec-title">Reorder list</div><div class="ec-desc">Items with closing stock &le; 5</div></div>
+        <div class="export-card" onclick="exportDistributionLog()"><div class="ec-icon"><i class="ti ti-list-details"></i></div><div class="ec-title">Full distribution log</div><div class="ec-desc">Every entry across all months</div></div>
+      </div>
+    </div>
+    <p class="hint">Downloads as .xlsx — opens in Excel, Google Sheets or LibreOffice.</p>
+  </div>
+
+  <div id="pane-items" class="pane">
+    <div class="card">
+      <div class="item-form">
+        <div style="font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:12px"><i class="ti ti-plus-circle" style="color:#185fa5"></i> Add new item</div>
+        <div class="form-row">
+          <div><label>Item name</label><input type="text" id="newName" placeholder="e.g. Peanut butter"></div>
+          <div><label>Category</label><select id="newCat"></select></div>
+          <div><label>Unit</label><input type="text" id="newUnit" placeholder="e.g. Jar" style="min-width:90px;max-width:110px"></div>
+          <div style="align-self:flex-end"><button class="btn success" onclick="addItem()"><i class="ti ti-plus"></i> Add item</button></div>
+        </div>
+      </div>
+      <div style="padding:10px 1.25rem;border-bottom:1px solid #ececec;display:flex;align-items:center;gap:8px;background:#f9fafc">
+        <i class="ti ti-search" style="color:#aaa;font-size:15px"></i>
+        <input type="text" id="itemSearch" placeholder="Search items..." oninput="renderItemsTable()" style="border:none;background:none;font-size:13px;outline:none;flex:1;color:#1a1a1a">
+        <span class="items-count" id="itemsCount"></span>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th style="width:40px">#</th><th>Item name</th><th>Category</th><th>Unit</th><th style="width:100px">Actions</th></tr></thead>
+          <tbody id="itemsBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:12px;padding:1.25rem;margin-bottom:1rem">
+      <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:10px"><i class="ti ti-tags" style="color:#185fa5"></i> Manage categories</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px" id="catList"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="text" id="newCatInput" placeholder="New category name..." style="padding:6px 9px;border-radius:7px;border:1px solid #ccc;font-size:13px;font-family:Arial,sans-serif;min-width:180px">
+        <button class="btn success" onclick="addCategory()"><i class="ti ti-plus"></i> Add category</button>
+      </div>
+    </div>
+    <button class="btn" onclick="if(confirm('Reset to default items?'))resetItems()"><i class="ti ti-refresh"></i> Reset to defaults</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbyhH-28mJjvuptK9XzgOIhA-b_iSibX_v3p_BbZuRP5y7DJbpGrCP-t-GtCH0Eyd2fARg/exec';
+const DEFAULT_ITEMS=[
+  {id:1,name:"Coffee (instant)",cat:"Beverages",unit:"Tin"},
+  {id:2,name:"Tea bags",cat:"Beverages",unit:"Box"},
+  {id:3,name:"Sugar",cat:"Dry Goods",unit:"kg"},
+  {id:4,name:"Milk (full cream)",cat:"Dairy",unit:"L"},
+  {id:5,name:"Coffee creamer",cat:"Beverages",unit:"Tin"},
+  {id:6,name:"Bread",cat:"Dry Goods",unit:"Loaf"},
+  {id:7,name:"Butter / Margarine",cat:"Dairy",unit:"500g"},
+  {id:8,name:"Dishwashing liquid",cat:"Cleaning",unit:"Bottle"},
+  {id:9,name:"Hand soap (refill)",cat:"Cleaning",unit:"L"},
+  {id:10,name:"Toilet paper",cat:"Paper",unit:"Roll"},
+  {id:11,name:"Paper towels",cat:"Paper",unit:"Roll"},
+  {id:12,name:"Bin bags (medium)",cat:"Paper",unit:"Roll"},
+  {id:13,name:"Disposable cups",cat:"Paper",unit:"Pack"},
+  {id:14,name:"Fruit juice",cat:"Beverages",unit:"L"},
+  {id:15,name:"Water (500ml)",cat:"Beverages",unit:"Crate"},
+  {id:16,name:"Snack bars",cat:"Snacks",unit:"Box"},
+  {id:17,name:"Dishwashing sponges",cat:"Cleaning",unit:"Pack"},
+  {id:18,name:"Bin bags (large)",cat:"Paper",unit:"Roll"},
+  {id:19,name:"Cereal / Oats",cat:"Dry Goods",unit:"Box"},
+  {id:20,name:"Plastic teaspoons",cat:"Paper",unit:"Pack"},
+];
+const DEFAULT_CATS=["Beverages","Dairy","Dry Goods","Cleaning","Paper","Snacks","Produce","Frozen","Other"];
+const MONTHS=["Jan 2025","Feb 2025","Mar 2025","Apr 2025","May 2025","Jun 2025","Jul 2025","Aug 2025","Sep 2025","Oct 2025","Nov 2025","Dec 2025","Jan 2026","Feb 2026","Mar 2026","Apr 2026","May 2026","Jun 2026"];
+
+let state={};
+let ITEMS=JSON.parse(localStorage.getItem('grocItems')||JSON.stringify(DEFAULT_ITEMS));
+let CATS=JSON.parse(localStorage.getItem('grocCats')||JSON.stringify(DEFAULT_CATS));
+let currentMonth=MONTHS[MONTHS.length-1];
+let charts={};
+let editingItemId=null;
+let isSyncing=false;
+
+function setSyncBar(status,msg){
+  const bar=document.getElementById('syncBar');
+  const sp=document.getElementById('syncSpinner');
+  bar.className='sync-bar'+(status==='err'?' err':status==='ok'?' ok':'');
+  sp.style.display=status==='loading'?'inline-block':'none';
+  document.getElementById('syncMsg').textContent=msg;
+}
+
+async function loadFromSheet(manual){
+  if(isSyncing)return;
+  isSyncing=true;
+  setSyncBar('loading',manual?'Refreshing...':'Connecting to shared data...');
+  document.getElementById('refreshBtn').disabled=true;
+  try{
+    const res=await fetch(SCRIPT_URL+'?action=read',{redirect:'follow'});
+    const txt=await res.text();
+    let json;
+    try{json=JSON.parse(txt);}catch(e){throw new Error('Bad response: '+txt.slice(0,80));}
+    if(json.ok&&json.data&&json.data.length>1){
+      state={};
+      json.data.slice(1).forEach(row=>{
+        const [month,itemId,open,recv,logRaw]=row;
+        if(!month)return;
+        if(month==='__meta__'){
+          try{if(row[1])ITEMS=JSON.parse(row[1]);}catch(e){}
+          try{if(row[2])CATS=JSON.parse(row[2]);}catch(e){}
+          return;
+        }
+        if(!state[month])state[month]={stock:{},log:[]};
+        if(itemId!==''&&itemId!==null&&itemId!==undefined&&itemId!=='')
+          state[month].stock[itemId]={open:Number(open)||0,recv:Number(recv)||0};
+        if(logRaw){try{const p=JSON.parse(logRaw);if(Array.isArray(p))state[month].log=p;}catch(e){}}
+      });
+    }
+    document.getElementById('lastSync').textContent='Synced: '+new Date().toLocaleTimeString();
+    setSyncBar('ok','✓ Connected — all changes save to Google Sheet and are visible to your whole team');
+    renderAll();
+    if(manual)toast('Refreshed ✓');
+  }catch(err){
+    setSyncBar('err','⚠ Could not connect to Google Sheet ('+err.message+'). Working in offline mode.');
+    renderAll();
+  }
+  isSyncing=false;
+  document.getElementById('refreshBtn').disabled=false;
+}
+
+async function pushToSheet(){
+  setSyncBar('loading','Saving to Google Sheet...');
+  const rows=[['month','itemId','open','recv','logJSON','_']];
+  rows.push(['__meta__',JSON.stringify(ITEMS),JSON.stringify(CATS),'','','']);
+  Object.keys(state).forEach(month=>{
+    const d=state[month];
+    const ids=Object.keys(d.stock||{});
+    let logStored=false;
+    ids.forEach((id,i)=>{
+      const s=d.stock[id];
+      rows.push([month,id,s.open,s.recv,i===0?JSON.stringify(d.log||[]):'','']);
+      if(i===0)logStored=true;
+    });
+    if(!logStored&&d.log&&d.log.length)rows.push([month,'','','',JSON.stringify(d.log),'']);
+    if(!ids.length&&(!d.log||!d.log.length))rows.push([month,'','','','','']);
+  });
+  try{
+    await fetch(SCRIPT_URL+'?action=write&rows='+encodeURIComponent(JSON.stringify(rows)),{redirect:'follow'});
+    document.getElementById('lastSync').textContent='Synced: '+new Date().toLocaleTimeString();
+    setSyncBar('ok','✓ Saved — team members will see your changes on next refresh');
+  }catch(err){
+    setSyncBar('err','⚠ Save failed — check your connection and try again');
+  }
+}
+
+function getMonthData(m){if(!state[m])state[m]={stock:{},log:[]};return state[m];}
+function getStock(m,id){const d=getMonthData(m);if(!d.stock[id])d.stock[id]={open:0,recv:0};return d.stock[id];}
+function calcGiven(m,id){return(getMonthData(m).log||[]).filter(e=>e.itemId===id).reduce((s,e)=>s+e.qty,0);}
+function statusText(c){return c<=2?'Reorder':c<=5?'Low':'OK';}
+function statusBadge(c){
+  if(c<=2)return'<span class="badge reorder">&#9888; Reorder</span>';
+  if(c<=5)return'<span class="badge low">Low</span>';
+  return'<span class="badge ok">OK</span>';
+}
+function toast(msg,err){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.background=err?'#a32d2d':'#1d9e75';
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);
+}
+function saveItems(){localStorage.setItem('grocItems',JSON.stringify(ITEMS));localStorage.setItem('grocCats',JSON.stringify(CATS));}
+
+function renderStock(){
+  document.getElementById('stockBody').innerHTML=ITEMS.map(item=>{
+    const s=getStock(currentMonth,item.id);
+    const given=calcGiven(currentMonth,item.id);
+    const total=s.open+s.recv;const closing=total-given;
+    return`<tr><td style="color:#888">${item.id}</td><td style="font-weight:600">${item.name}</td><td><span class="cat-badge">${item.cat}</span></td><td style="color:#666">${item.unit}</td><td><input type="number" min="0" value="${s.open}" onchange="updateStock(${item.id},'open',this.value)"></td><td><input type="number" min="0" value="${s.recv}" onchange="updateStock(${item.id},'recv',this.value)"></td><td style="font-weight:600">${total}</td><td style="color:#666">${given}</td><td style="font-weight:600">${closing}</td><td>${statusBadge(closing)}</td></tr>`;
+  }).join('');
+}
+function updateStock(id,field,val){getStock(currentMonth,id)[field]=Math.max(0,parseInt(val)||0);}
+async function saveStock(){
+  const btn=document.getElementById('saveStockBtn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Saving...';
+  await pushToSheet();
+  btn.disabled=false;btn.innerHTML='<i class="ti ti-device-floppy"></i> Save &amp; sync';
+  renderKPIs();toast('Saved & synced ✓');
+}
+
+function renderKPIs(){
+  let recv=0,given=0,reorder=0;
+  ITEMS.forEach(item=>{
+    const s=getStock(currentMonth,item.id);const g=calcGiven(currentMonth,item.id);
+    recv+=s.recv;given+=g;if(s.open+s.recv-g<=2)reorder++;
+  });
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi"><div class="lbl">Items tracked</div><div class="val">${ITEMS.length}</div></div>
+    <div class="kpi"><div class="lbl">Total received</div><div class="val">${recv}</div></div>
+    <div class="kpi"><div class="lbl">Total given out</div><div class="val">${given}</div></div>
+    <div class="kpi"><div class="lbl">Need reorder</div><div class="val warn">${reorder}</div></div>`;
+  const el=document.getElementById('exportMonthLabel');if(el)el.textContent=currentMonth;
+}
+
+function renderLogSelect(){document.getElementById('logItem').innerHTML=ITEMS.map(i=>`<option value="${i.id}">${i.name}</option>`).join('');}
+function renderLog(){
+  const logs=(getMonthData(currentMonth).log||[]).slice().reverse();
+  const tbody=document.getElementById('logBody');
+  if(!logs.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#888;padding:2rem">No entries yet for this month.</td></tr>';return;}
+  tbody.innerHTML=logs.map(e=>{
+    const item=ITEMS.find(i=>i.id===e.itemId);
+    return`<tr><td style="color:#666">${e.date}</td><td style="font-weight:600">${item?item.name:e.itemId}</td><td>${e.qty}</td><td style="color:#666">${e.to||'—'}</td><td style="color:#666">${e.month}</td><td><button class="icon-btn del" onclick="removeLog(${e.id})" title="Remove"><i class="ti ti-trash"></i></button></td></tr>`;
+  }).join('');
+}
+async function addLog(){
+  const itemId=parseInt(document.getElementById('logItem').value);
+  const qty=Math.max(1,parseInt(document.getElementById('logQty').value)||1);
+  const to=document.getElementById('logTo').value.trim();
+  const d=getMonthData(currentMonth);if(!d.log)d.log=[];
+  const now=new Date();const mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  d.log.push({id:Date.now(),itemId,qty,to,month:currentMonth,date:`${String(now.getDate()).padStart(2,'0')}-${mn[now.getMonth()]}-${now.getFullYear()}`});
+  await pushToSheet();renderLog();renderKPIs();renderStock();
+  document.getElementById('logQty').value=1;document.getElementById('logTo').value='';
+  toast('Entry added & synced ✓');
+}
+async function removeLog(id){
+  const d=getMonthData(currentMonth);d.log=(d.log||[]).filter(e=>e.id!==id);
+  await pushToSheet();renderLog();renderKPIs();renderStock();
+}
+
+function renderItemsTable(){
+  const q=(document.getElementById('itemSearch').value||'').toLowerCase();
+  const filtered=ITEMS.filter(i=>!q||i.name.toLowerCase().includes(q)||i.cat.toLowerCase().includes(q));
+  document.getElementById('itemsCount').textContent=`${filtered.length} of ${ITEMS.length} items`;
+  document.getElementById('itemsBody').innerHTML=filtered.map(item=>{
+    if(editingItemId===item.id)return`<tr style="background:#eef4fb"><td style="color:#888">${item.id}</td><td><input class="edit-input" id="ei_name" value="${item.name}"></td><td><select class="edit-input" id="ei_cat">${CATS.map(c=>`<option${c===item.cat?' selected':''}>${c}</option>`).join('')}</select></td><td><input class="edit-input" id="ei_unit" value="${item.unit}" style="max-width:90px"></td><td><button class="icon-btn" style="color:#1d9e75" onclick="saveItemEdit(${item.id})"><i class="ti ti-check"></i></button><button class="icon-btn" style="color:#888" onclick="cancelItemEdit()"><i class="ti ti-x"></i></button></td></tr>`;
+    return`<tr><td style="color:#888">${item.id}</td><td style="font-weight:600">${item.name}</td><td><span class="cat-badge">${item.cat}</span></td><td style="color:#666">${item.unit}</td><td><button class="icon-btn" onclick="startItemEdit(${item.id})"><i class="ti ti-edit"></i></button><button class="icon-btn del" onclick="deleteItem(${item.id})"><i class="ti ti-trash"></i></button></td></tr>`;
+  }).join('');
+}
+async function addItem(){
+  const name=document.getElementById('newName').value.trim();
+  const cat=document.getElementById('newCat').value;
+  const unit=document.getElementById('newUnit').value.trim();
+  if(!name){toast('Please enter an item name.',true);return;}
+  if(!unit){toast('Please enter a unit.',true);return;}
+  ITEMS.push({id:ITEMS.reduce((m,i)=>Math.max(m,i.id),0)+1,name,cat,unit});
+  saveItems();await pushToSheet();
+  document.getElementById('newName').value='';document.getElementById('newUnit').value='';
+  renderItemsTable();renderStock();renderLogSelect();renderKPIs();
+  toast(`"${name}" added & synced ✓`);
+}
+function startItemEdit(id){editingItemId=id;renderItemsTable();}
+function cancelItemEdit(){editingItemId=null;renderItemsTable();}
+async function saveItemEdit(id){
+  const item=ITEMS.find(i=>i.id===id);if(!item)return;
+  const name=document.getElementById('ei_name').value.trim();
+  const cat=document.getElementById('ei_cat').value;
+  const unit=document.getElementById('ei_unit').value.trim();
+  if(!name||!unit){toast('Name and unit cannot be empty.',true);return;}
+  item.name=name;item.cat=cat;item.unit=unit;editingItemId=null;saveItems();
+  await pushToSheet();renderItemsTable();renderStock();renderLogSelect();
+  toast('Item updated & synced ✓');
+}
+async function deleteItem(id){
+  const item=ITEMS.find(i=>i.id===id);if(!item)return;
+  if(!confirm(`Delete "${item.name}"?`))return;
+  ITEMS=ITEMS.filter(i=>i.id!==id);saveItems();await pushToSheet();
+  renderItemsTable();renderStock();renderLogSelect();renderKPIs();
+  toast(`"${item.name}" deleted & synced`);
+}
+async function resetItems(){
+  ITEMS=JSON.parse(JSON.stringify(DEFAULT_ITEMS));CATS=JSON.parse(JSON.stringify(DEFAULT_CATS));
+  saveItems();await pushToSheet();renderItemsTable();renderStock();renderLogSelect();renderKPIs();renderCatList();
+  toast('Reset to defaults & synced ✓');
+}
+
+function renderCatList(){
+  document.getElementById('newCat').innerHTML=CATS.map(c=>`<option>${c}</option>`).join('');
+  document.getElementById('catList').innerHTML=CATS.map(c=>`<div style="display:inline-flex;align-items:center;gap:4px;background:#e6f1fb;border-radius:20px;padding:3px 10px 3px 12px;font-size:12px;font-weight:600;color:#0c447c">${c}${DEFAULT_CATS.includes(c)?'':`<button class="icon-btn" onclick="deleteCat('${c}')" style="font-size:12px;padding:0 2px;color:#185fa5"><i class="ti ti-x"></i></button>`}</div>`).join('');
+}
+async function addCategory(){
+  const val=document.getElementById('newCatInput').value.trim();
+  if(!val){toast('Enter a category name.',true);return;}
+  if(CATS.includes(val)){toast('Category already exists.',true);return;}
+  CATS.push(val);saveItems();await pushToSheet();renderCatList();renderItemsTable();
+  document.getElementById('newCatInput').value='';toast(`"${val}" added ✓`);
+}
+async function deleteCat(cat){
+  if(!confirm(`Remove category "${cat}"?`))return;
+  CATS=CATS.filter(c=>c!==cat);saveItems();await pushToSheet();renderCatList();renderItemsTable();
+}
+
+function renderCharts(){
+  const C=['#185fa5','#0f6e56','#ba7517','#993556','#534ab7','#993c1d'];
+  ['bar','doughnut','line'].forEach(k=>{if(charts[k])charts[k].destroy();});
+  charts.bar=new Chart(document.getElementById('barChart'),{type:'bar',data:{labels:ITEMS.map(i=>i.name.length>14?i.name.slice(0,13)+'…':i.name),datasets:[{label:'Closing stock',data:ITEMS.map(item=>Math.max(0,getStock(currentMonth,item.id).open+getStock(currentMonth,item.id).recv-calcGiven(currentMonth,item.id))),backgroundColor:ITEMS.map((_,i)=>C[i%C.length]+'33'),borderColor:ITEMS.map((_,i)=>C[i%C.length]),borderWidth:1.5,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10},maxRotation:45,autoSkip:false},grid:{display:false}},y:{beginAtZero:true,ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,.06)'}}}}});
+  let recv=0,given=0;ITEMS.forEach(item=>{recv+=getStock(currentMonth,item.id).recv;given+=calcGiven(currentMonth,item.id);});
+  charts.doughnut=new Chart(document.getElementById('doughnutChart'),{type:'doughnut',data:{labels:['Given out','Remaining'],datasets:[{data:[given,Math.max(0,recv-given)],backgroundColor:['#185fa5','#d6e8f7'],borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{position:'bottom',labels:{font:{size:12},boxWidth:10,padding:14}}}}});
+  const used=Object.keys(state).filter(m=>MONTHS.includes(m));const last6=(used.length?used:[currentMonth]).slice(-6);
+  const top6=ITEMS.map(item=>({item,total:last6.reduce((s,m)=>s+(state[m]&&state[m].log||[]).filter(e=>e.itemId===item.id).reduce((a,e)=>a+e.qty,0),0)})).sort((a,b)=>b.total-a.total).slice(0,6);
+  charts.line=new Chart(document.getElementById('lineChart'),{type:'line',data:{labels:last6,datasets:top6.map((t,i)=>({label:t.item.name,data:last6.map(m=>(state[m]&&state[m].log||[]).filter(e=>e.itemId===t.item.id).reduce((a,e)=>a+e.qty,0)),borderColor:C[i],backgroundColor:C[i]+'22',tension:.35,fill:false,pointRadius:4,borderWidth:2}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:10,padding:12}}},scales:{x:{ticks:{font:{size:10}},grid:{display:false}},y:{beginAtZero:true,ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,.06)'}}}}}); 
+}
+
+function buildStockRows(m){return ITEMS.map(item=>{const s=getStock(m,item.id);const given=calcGiven(m,item.id);const total=s.open+s.recv;const closing=total-given;return{'#':item.id,'Item':item.name,'Category':item.cat,'Unit':item.unit,'Opening stock':s.open,'Received':s.recv,'Total available':total,'Given out':given,'Closing stock':closing,'Status':statusText(closing)};});}
+function buildLogRows(m){return(getMonthData(m).log||[]).map(e=>{const item=ITEMS.find(i=>i.id===e.itemId);return{Date:e.date,'Item':item?item.name:'','Qty':e.qty,'Given to':e.to||'','Month':e.month};});}
+function dlWb(wb,name){XLSX.writeFile(wb,name);toast('Downloaded '+name+' ✓');}
+function exportCurrentMonth(){const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(buildStockRows(currentMonth));ws['!cols']=[{wch:4},{wch:22},{wch:14},{wch:8},{wch:14},{wch:10},{wch:15},{wch:10},{wch:14},{wch:10}];XLSX.utils.book_append_sheet(wb,ws,'Stock - '+currentMonth);const lr=buildLogRows(currentMonth);if(lr.length){const ws2=XLSX.utils.json_to_sheet(lr);XLSX.utils.book_append_sheet(wb,ws2,'Log - '+currentMonth);}dlWb(wb,'Grocery_'+currentMonth.replace(' ','_')+'.xlsx');}
+function exportAllMonths(){const wb=XLSX.utils.book_new();const recorded=MONTHS.filter(m=>state[m]);if(!recorded.length){toast('No data yet.',true);return;}recorded.forEach(m=>{const ws=XLSX.utils.json_to_sheet(buildStockRows(m));XLSX.utils.book_append_sheet(wb,ws,m.replace(' ','_').slice(0,31));});dlWb(wb,'Grocery_All_Months.xlsx');}
+function exportReorderList(){const wb=XLSX.utils.book_new();const rows=ITEMS.map(item=>{const s=getStock(currentMonth,item.id);const closing=s.open+s.recv-calcGiven(currentMonth,item.id);if(closing>5)return null;return{'#':item.id,'Item':item.name,'Category':item.cat,'Unit':item.unit,'Closing stock':closing,'Status':statusText(closing),'Suggested order':'','Supplier note':''};}).filter(Boolean);if(!rows.length){toast('No items need reordering.',true);return;}const ws=XLSX.utils.json_to_sheet(rows);XLSX.utils.book_append_sheet(wb,ws,'Reorder List');dlWb(wb,'Reorder_'+currentMonth.replace(' ','_')+'.xlsx');}
+function exportDistributionLog(){const wb=XLSX.utils.book_new();const rows=[];MONTHS.forEach(m=>{if(state[m])(state[m].log||[]).forEach(e=>{const item=ITEMS.find(i=>i.id===e.itemId);rows.push({Date:e.date,Month:e.month,'Item':item?item.name:'','Category':item?item.cat:'','Qty':e.qty,'Given to':e.to||''});});});if(!rows.length){toast('No entries yet.',true);return;}const ws=XLSX.utils.json_to_sheet(rows);XLSX.utils.book_append_sheet(wb,ws,'Distribution Log');dlWb(wb,'Grocery_Distribution_Log.xlsx');}
+
+function switchTab(name,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));document.getElementById('pane-'+name).classList.add('active');
+  if(name==='charts')renderCharts();if(name==='log')renderLog();if(name==='items'){renderItemsTable();renderCatList();}
+}
+function initMonthSel(){
+  const sel=document.getElementById('monthSel');
+  sel.innerHTML=MONTHS.map(m=>`<option value="${m}"${m===currentMonth?' selected':''}>${m}</option>`).join('');
+  sel.onchange=function(){currentMonth=this.value;renderAll();};
+}
+function renderAll(){renderKPIs();renderStock();renderLog();renderLogSelect();}
+initMonthSel();loadFromSheet(false);
+</script>
+</body>
+</html>
